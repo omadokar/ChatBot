@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: block;
+            place-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 700px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            margin: 20px;
+        }
+
+        .chat-box {
+            flex: 1;
+            max-height: 700px;
+            /* Set a maximum height */
+            overflow-y: auto;
+            /* Enable scrolling */
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        /* Ensures that long messages wrap properly */
+        .user-message,
+        .bot-message {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            /* Allows text to wrap correctly */
+        }
+
+
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background: #f1f1f1;
+            border-top: 1px solid #ddd;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .user-message,
+        .bot-message {
+            padding: 10px;
+            border-radius: 10px;
+            margin: 5px;
+            max-width: 70%;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: #007bff;
+            color: white;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: #e0e0e0;
+        }
+
+        .bot-message strong {
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Welocme to Educational 🤖Chatbot ...</h1>
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box">
+            <div class="bot-message"><strong>🤖 Bot:</strong> Hello! How can I assist you today?</div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type a message..." autofocus>
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const userInput = document.getElementById("user-input");
+            const chatBox = document.getElementById("chat-box");
+            const message = userInput.value.trim();
+
+            if (message === "") return;
+
+            // Display user message
+            const userMessageDiv = document.createElement("div");
+            userMessageDiv.className = "user-message";
+            userMessageDiv.innerHTML = `<strong>🧑 You:</strong> ${message}`;
+            chatBox.appendChild(userMessageDiv);
+            userInput.value = "";
+
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+
+            try {
+                const response = await fetch("http://localhost:3000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+
+                // Display bot response with formatted text
+                const botMessageDiv = document.createElement("div");
+                botMessageDiv.className = "bot-message";
+                botMessageDiv.innerHTML = `<strong>🤖 Bot:</strong> ${formatResponse(data.response)}`;
+                chatBox.appendChild(botMessageDiv);
+
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+            } catch (error) {
+                console.error("Error:", error);
+                const errorMessageDiv = document.createElement("div");
+                errorMessageDiv.className = "bot-message";
+                errorMessageDiv.innerHTML = `<strong>⚠️ Error:</strong> Failed to get a response. Please try again later.`;
+                chatBox.appendChild(errorMessageDiv);
+            }
+        }
+
+        // Format response text properly with bold headings, bullet points, and line breaks
+        function formatResponse(responseText) {
+            return responseText
+                .replace(/\n\s*\n/g, "<br><br>") // Preserve paragraph spacing
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold text (**text**)
+                .replace(/(?:\r\n|\r|\n)\s*\*\s+(.*?)/g, "<li>$1</li>") // Convert "* text" to <li>
+                .replace(/(<li>.*?<\/li>)+/g, "<ul>$&</ul>") // Wrap multiple <li> items in <ul>
+                .replace(/\n/g, "<br>"); // Ensure single line breaks still work
+        }
+
+
+        // Submit message when "Enter" key is pressed
+        document.getElementById("user-input").addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault(); // Prevent form submission
+                sendMessage();
+            }
+        });
+
+
+    </script>
+</body>
+
+</html>
